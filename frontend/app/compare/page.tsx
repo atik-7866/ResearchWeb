@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, ComparisonResponse, PaperComparisonFields } from "@/lib/api";
+import { api, ComparisonResponse, PaperComparisonFields, PaperOut } from "@/lib/api";
 
 const FIELD_ORDER: { key: keyof PaperComparisonFields; label: string }[] = [
   { key: "problem", label: "Problem" },
@@ -20,16 +20,60 @@ const NOT_STATED = "Not stated in the available abstract/metadata.";
 
 export default function ComparePage() {
   const [idsInput, setIdsInput] = useState("");
+  const [selectedPapers, setSelectedPapers] = useState<PaperOut[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<PaperOut[]>([]);
+  const [searching, setSearching] = useState(false);
   const [result, setResult] = useState<ComparisonResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length < 2 || selectedPapers.length >= 5) {
+      setSuggestions([]);
+      return;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const response = await api.searchPapers(trimmedQuery, 6);
+        if (active) {
+          setSuggestions(response.results.filter((paper) => !selectedPapers.some((selected) => selected.paper_id === paper.paper_id)));
+        }
+      } catch {
+        if (active) setSuggestions([]);
+      } finally {
+        if (active) setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [searchQuery, selectedPapers]);
+
+  function addPaper(paper: PaperOut) {
+    if (selectedPapers.length >= 5 || selectedPapers.some((selected) => selected.paper_id === paper.paper_id)) return;
+    setSelectedPapers((current) => [...current, paper]);
+    setSearchQuery("");
+    setSuggestions([]);
+  }
+
+  function removePaper(paperId: string) {
+    setSelectedPapers((current) => current.filter((paper) => paper.paper_id !== paperId));
+  }
+
   async function handleCompare(e: React.FormEvent) {
     e.preventDefault();
-    const ids = idsInput
+    const manualIds = idsInput
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
+    const ids = [...new Set([...selectedPapers.map((paper) => paper.paper_id), ...manualIds])];
 
     if (ids.length < 2) {
       setError("Enter at least 2 paper IDs, comma-separated.");
@@ -69,9 +113,55 @@ export default function ComparePage() {
         </p>
       </header>
 
+      <section className="mb-8">
+        <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-neutral-500">
+          Find papers to compare
+        </label>
+        <div className="relative">
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={selectedPapers.length >= 5 ? "Maximum 5 papers selected" : "Search by title or topic"}
+            disabled={selectedPapers.length >= 5}
+            className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-accent disabled:opacity-50"
+          />
+          {suggestions.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface shadow-xl">
+              {suggestions.map((paper) => (
+                <button
+                  type="button"
+                  key={paper.paper_id}
+                  onClick={() => addPaper(paper)}
+                  className="block w-full border-b border-border px-4 py-3 text-left last:border-0 hover:bg-accent/10"
+                >
+                  <span className="block text-sm text-neutral-200">{paper.title}</span>
+                  <span className="text-xs text-neutral-500">{paper.year ?? "n.d."}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {searching && <p className="mt-2 text-xs text-neutral-600">Searching…</p>}
+        {selectedPapers.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {selectedPapers.map((paper) => (
+              <button
+                type="button"
+                key={paper.paper_id}
+                onClick={() => removePaper(paper.paper_id)}
+                className="rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-xs text-accent hover:bg-accent/20"
+                title="Remove paper"
+              >
+                {paper.title.length > 36 ? `${paper.title.slice(0, 36)}…` : paper.title} ×
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
       <form onSubmit={handleCompare} className="mb-8">
         <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-neutral-500">
-          Paper IDs (2–5, comma-separated — find these on the search page or a paper&apos;s URL)
+          Or paste paper IDs (2–5, comma-separated)
         </label>
         <div className="flex gap-2">
           <input

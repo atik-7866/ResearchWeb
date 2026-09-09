@@ -125,6 +125,15 @@ export default function HomePage() {
                 {paper.abstract}
               </p>
             )}
+            <p className="mt-2 text-xs font-medium text-accent">
+              {paper.relevance_score != null && paper.relevance_score >= 0.8 && paper.topics[0]
+                ? `Strong topic match: ${paper.topics[0]}`
+                : paper.relevance_score != null
+                  ? `High relevance score: ${(paper.relevance_score * 100).toFixed(0)}%`
+                  : paper.topics[0]
+                    ? `Topic match: ${paper.topics[0]}`
+                    : "Matched by semantic similarity"}
+            </p>
             <div className="mt-2 flex flex-wrap gap-1">
               {paper.topics.slice(0, 5).map((t) => (
                 <span

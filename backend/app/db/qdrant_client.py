@@ -81,6 +81,25 @@ class QdrantWrapper:
             results.append(payload)
         return results
 
+    def get_vector_by_paper_id(self, paper_id: str) -> list[float] | None:
+        """Return the stored embedding for an indexed paper, if available.
+
+        Similar-work lookup needs the paper's original vector as its query;
+        returning None keeps missing or legacy records from becoming errors.
+        """
+        points = self._client.retrieve(
+            collection_name=self.collection,
+            ids=[_point_id(paper_id)],
+            with_vectors=True,
+        )
+        if not points or points[0].vector is None:
+            return None
+
+        vector = points[0].vector
+        if isinstance(vector, dict):
+            vector = next(iter(vector.values()), None)
+        return list(vector) if vector is not None else None
+
     def count(self) -> int:
         return self._client.count(collection_name=self.collection).count
 

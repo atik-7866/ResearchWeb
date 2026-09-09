@@ -20,7 +20,7 @@ const STAGE_COLORS: Record<string, string> = {
 
 export default function ReadingPathPage() {
   const [topic, setTopic] = useState("");
-  const [pathLength, setPathLength] = useState(8);
+  const [pathLength, setPathLength] = useState(5);
   const [result, setResult] = useState<ReadingPathResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +71,7 @@ export default function ReadingPathPage() {
           className="rounded-lg border border-border bg-surface px-3 py-3 text-sm outline-none focus:border-accent"
         >
           <option value={4}>4 papers</option>
+          <option value={5}>5 papers</option>
           <option value={8}>8 papers</option>
           <option value={12}>12 papers</option>
         </select>

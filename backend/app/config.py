@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
 
     llm_provider: str = "groq"
-    llm_model: str = "llama-3.1-8b-instant"
+    llm_model: str = "llama-3.3-70b-versatile"
     groq_api_key: str
 
     embedding_provider: str = "sentence_transformers"

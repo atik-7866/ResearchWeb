@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { api, PaperDetail, PaperRef, RelatedPaper } from "@/lib/api";
+import { api, PaperDetail, PaperRef, RelatedPaper, SimilarPaper } from "@/lib/api";
 
 function PaperLink({ paper }: { paper: PaperRef }) {
   return (
@@ -26,6 +26,7 @@ export default function PaperDetailPage() {
 
   const [paper, setPaper] = useState<PaperDetail | null>(null);
   const [related, setRelated] = useState<RelatedPaper[]>([]);
+  const [similar, setSimilar] = useState<SimilarPaper[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,10 +38,12 @@ export default function PaperDetailPage() {
     Promise.all([
       api.getPaper(paperId),
       api.getRelatedPapers(paperId, 8).catch(() => ({ results: [] as RelatedPaper[] })),
+      api.getSimilarPapers(paperId, 5).catch(() => ({ results: [] as SimilarPaper[] })),
     ])
-      .then(([paperData, relatedData]) => {
+      .then(([paperData, relatedData, similarData]) => {
         setPaper(paperData);
         setRelated(relatedData.results);
+        setSimilar(similarData.results.filter((candidate) => (candidate.relevance_score ?? 0) >= 0.8));
       })
       .catch((err) =>
         setError(err instanceof Error ? err.message : "Failed to load paper")
@@ -166,6 +169,30 @@ export default function PaperDetailPage() {
               </span>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-neutral-500">
+          Similar Work ({similar.length})
+        </h2>
+        <p className="mb-3 text-xs leading-relaxed text-neutral-600">
+          Papers with highly similar abstracts, based on semantic similarity. High similarity can also mean papers on the same well-established topic — this is not evidence of copying and should not be treated as a plagiarism finding.
+        </p>
+        <div className="space-y-2">
+          {similar.map((candidate) => (
+            <div key={candidate.paper_id} className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <PaperLink paper={candidate} />
+              </div>
+              <span className="shrink-0 text-xs font-medium text-accent">
+                {((candidate.relevance_score ?? 0) * 100).toFixed(0)}%
+              </span>
+            </div>
+          ))}
+          {similar.length === 0 && (
+            <p className="text-sm text-neutral-600">No highly similar work found.</p>
+          )}
         </div>
       </section>
     </main>

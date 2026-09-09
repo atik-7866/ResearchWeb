@@ -37,11 +37,9 @@ async def run_ingestion(topic: str, limit: int, from_year: int | None = None) ->
     # 3. Deduplicate
     unique_papers = deduplicate(normalized)
 
-    # 4. Filter out papers with no abstract (can't be meaningfully embedded)
-    embeddable: list[NormalizedPaper] = [p for p in unique_papers if p.abstract]
-    skipped = len(unique_papers) - len(embeddable)
-    if skipped:
-        logger.info(f"Skipping {skipped} paper(s) with no reconstructable abstract")
+    # 4. Titles are still useful search content when an abstract is absent.
+    embeddable: list[NormalizedPaper] = unique_papers
+    skipped = 0
 
     # 5. Embed
     embedder = get_embedder()

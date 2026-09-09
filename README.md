@@ -29,7 +29,7 @@ API docs: `http://localhost:8000/docs`
 With the backend terminal active, open another terminal:
 
 ```powershell
-cd C:\Users\HP\Documents\researchgraph\backend
+cd C:\Users\HP\Desktop\research\backend
 ..\.venv\Scripts\python.exe -m scripts.ingest --topic "retrieval augmented generation" --limit 50
 ```
 

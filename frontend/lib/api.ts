@@ -56,11 +56,7 @@ export interface RelatedPaper extends PaperRef {
   relatedness_score: number;
 }
 
-export interface RelatedPaper extends PaperRef {
-  shared_topics: number;
-  shared_authors: number;
-  relatedness_score: number;
-}
+export interface SimilarPaper extends PaperOut {}
 
 export interface CitationLink {
   citing_id: string;
@@ -180,6 +176,11 @@ export const api = {
   getPaperCitations: (paperId: string) =>
     request<{ references: PaperOut[]; cited_by: PaperOut[] }>(
       `/papers/${paperId}/citations`
+    ),
+
+  getSimilarPapers: (paperId: string, topK = 5) =>
+    request<{ paper_id: string; results: SimilarPaper[]; similarity_threshold: number }>(
+      `/papers/${paperId}/similar?top_k=${topK}`
     ),
 
   getStats: () => request<SystemStats>("/stats"),
